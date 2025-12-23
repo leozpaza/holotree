@@ -20,7 +20,7 @@ const nodeTypes = {
 };
 
 function KnowledgeTreeInner({ onNodeClick, highlightedNodeId, onHighlightClear }) {
-  const { nodes: dbNodes, createNode } = useNodesContext();
+  const { nodes: dbNodes, createNode, updateNode } = useNodesContext();
   const { fitView, setCenter } = useReactFlow();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -129,9 +129,12 @@ function KnowledgeTreeInner({ onNodeClick, highlightedNodeId, onHighlightClear }
     await createNode(parentId, position);
   }, [createNode]);
 
-  const handleNodeDragStop = useCallback((event, node) => {
-    // Could save position to DB here
-  }, []);
+  const handleNodeDragStop = useCallback(async (event, node) => {
+    await updateNode(node.id, {
+      positionX: node.position.x,
+      positionY: node.position.y
+    });
+  }, [updateNode]);
 
   return (
     <ReactFlow

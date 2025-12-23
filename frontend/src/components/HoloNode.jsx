@@ -11,7 +11,12 @@ const HoloNode = memo(({ data, selected }) => {
 
   const handleAddChild = async (e) => {
     e.stopPropagation();
-    await createNode(data.id);
+    // Создаём дочерний узел со смещением относительно родителя
+    const offset = { x: 50, y: 150 };
+    await createNode(data.id, {
+      x: (data.position_x || 0) + offset.x,
+      y: (data.position_y || 0) + offset.y
+    });
   };
 
   const handleDelete = async (e) => {
