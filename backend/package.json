@@ -1,0 +1,22 @@
+{
+  "name": "holotree-backend",
+  "version": "1.0.0",
+  "description": "HoloTree Knowledge Base Backend",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "sql.js": "^1.11.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "multer": "^1.4.5-lts.1",
+    "sharp": "^0.33.5",
+    "socket.io": "^4.8.0",
+    "uuid": "^10.0.0",
+    "y-protocols": "^1.0.6",
+    "yjs": "^13.6.20"
+  }
+}

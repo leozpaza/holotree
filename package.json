@@ -1,0 +1,14 @@
+{
+  "name": "holotree",
+  "version": "1.0.0",
+  "description": "HoloTree - Interactive Knowledge Base",
+  "scripts": {
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "build": "cd frontend && npm run build && mkdir -p ../backend/public && cp -r dist/* ../backend/public/",
+    "start": "cd backend && node server.js",
+    "dev": "cd backend && node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
