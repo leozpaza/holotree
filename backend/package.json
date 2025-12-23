@@ -6,7 +6,12 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "backup:list": "node backup-utils.js list",
+    "backup:create": "node backup-utils.js create",
+    "backup:restore": "node backup-utils.js restore",
+    "backup:clean": "node backup-utils.js clean",
+    "backup:export": "node backup-utils.js export"
   },
   "dependencies": {
     "sql.js": "^1.11.0",

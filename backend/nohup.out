@@ -1,0 +1,68 @@
+⏰ Auto-save: every 10s
+⏰ Auto-backup: every 5 minutes
+✅ Database initialized
+📂 Database path: /workspaces/holotree/backend/data/holotree.db
+💾 Backup directory: /workspaces/holotree/backend/backups
+
+🌳 ═══════════════════════════════════════════════════
+   HoloTree Knowledge Base Server
+   ═══════════════════════════════════════════════════
+   🚀 Server running on port 3001
+   📂 Database: /workspaces/holotree/backend/data/holotree.db
+   💾 Backups: /workspaces/holotree/backend/backups
+   ⏰ Auto-save: every 10s
+   🔄 Auto-backup: every 5min
+   ═══════════════════════════════════════════════════
+
+🔄 Backup created: /workspaces/holotree/backend/backups/holotree-2025-12-23T16-13-53.db
+💾 Database saved: 2025-12-23T16:14:03.357Z
+Error creating node: Wrong API use : tried to bind a value of an unknown type (undefined).
+💾 Database saved: 2025-12-23T16:14:13.360Z
+💾 Database saved: 2025-12-23T16:14:23.361Z
+Error creating node: Wrong API use : tried to bind a value of an unknown type (undefined).
+💾 Database saved: 2025-12-23T16:14:33.364Z
+Error creating node: Wrong API use : tried to bind a value of an unknown type (undefined).
+Error creating node: Wrong API use : tried to bind a value of an unknown type (undefined).
+💾 Database saved: 2025-12-23T16:14:42.743Z
+💾 Database saved: 2025-12-23T16:14:43.365Z
+💾 Database saved: 2025-12-23T16:14:50.762Z
+💾 Database saved: 2025-12-23T16:14:53.367Z
+
+⚠️  Received SIGTERM, starting graceful shutdown...
+🔌 HTTP server closed
+💾 Saving database...
+💾 Database saved: 2025-12-23T16:14:56.582Z
+✅ Database saved
+🔄 Creating final backup...
+🔄 Backup created: /workspaces/holotree/backend/backups/holotree-2025-12-23T16-14-56.db
+✅ Final backup created
+👋 Shutdown complete. Goodbye!
+
+⏰ Auto-save: every 10s
+⏰ Auto-backup: every 5 minutes
+✅ Database initialized
+📂 Database path: /workspaces/holotree/backend/data/holotree.db
+💾 Backup directory: /workspaces/holotree/backend/backups
+
+🌳 ═══════════════════════════════════════════════════
+   HoloTree Knowledge Base Server
+   ═══════════════════════════════════════════════════
+   🚀 Server running on port 3001
+   📂 Database: /workspaces/holotree/backend/data/holotree.db
+   💾 Backups: /workspaces/holotree/backend/backups
+   ⏰ Auto-save: every 10s
+   🔄 Auto-backup: every 5min
+   ═══════════════════════════════════════════════════
+
+🔄 Backup created: /workspaces/holotree/backend/backups/holotree-2025-12-23T16-14-57.db
+
+⚠️  Received SIGTERM, starting graceful shutdown...
+🔌 HTTP server closed
+💾 Saving database...
+💾 Database saved: 2025-12-23T16:15:06.520Z
+✅ Database saved
+🔄 Creating final backup...
+🔄 Backup created: /workspaces/holotree/backend/backups/holotree-2025-12-23T16-15-06.db
+✅ Final backup created
+👋 Shutdown complete. Goodbye!
+

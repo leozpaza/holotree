@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    volumes:
+      # Постоянное хранение БД и загруженных файлов
+      - holotree-data:/app/data
+      - holotree-uploads:/app/uploads
+      - holotree-backups:/app/backups
+    environment:
+      - NODE_ENV=production
+      - DB_PATH=/app/data/holotree.db
+      - BACKUP_DIR=/app/backups
+      - BACKUP_INTERVAL=300000
+      - BACKUP_KEEP_COUNT=50
+    restart: unless-stopped
+    networks:
+      - holotree-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=http://localhost:3001
+    restart: unless-stopped
+    networks:
+      - holotree-network
+
+volumes:
+  # Именованные volumes для постоянного хранения данных
+  holotree-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}/backend/data
+      o: bind
+  holotree-uploads:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}/backend/uploads
+      o: bind
+  holotree-backups:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}/backend/backups
+      o: bind
+
+networks:
+  holotree-network:
+    driver: bridge

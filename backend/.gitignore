@@ -1,0 +1,16 @@
+# Database
+data/
+*.db
+*.db-*
+
+# Backups
+backups/
+
+# Uploads
+uploads/
+
+# Logs
+*.log
+
+# Environment
+.env

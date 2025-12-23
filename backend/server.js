@@ -13,6 +13,26 @@ import * as Y from 'yjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// ============ CONFIGURATION ============
+const config = {
+  port: process.env.PORT || 3001,
+  dataDir: process.env.DB_PATH ? path.dirname(process.env.DB_PATH) : path.join(__dirname, 'data'),
+  dbPath: process.env.DB_PATH || path.join(__dirname, 'data', 'holotree.db'),
+  backupDir: process.env.BACKUP_DIR || path.join(__dirname, 'backups'),
+  uploadsDir: process.env.UPLOADS_DIR || path.join(__dirname, 'uploads'),
+  backupInterval: parseInt(process.env.BACKUP_INTERVAL) || 300000, // 5 минут по умолчанию
+  backupKeepCount: parseInt(process.env.BACKUP_KEEP_COUNT) || 50, // Хранить 50 последних бэкапов
+  autoSaveInterval: 10000 // 10 секунд для автосохранения основной БД
+};
+
+// Создаём необходимые директории
+[config.dataDir, config.backupDir, config.uploadsDir].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+    console.log(`📁 Created directory: ${dir}`);
+  }
+});
+
 // ============ EXPRESS SETUP ============
 const app = express();
 const server = createServer(app);
@@ -27,12 +47,12 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 // Static files for uploads
-const uploadsDir = path.join(__dirname, 'uploads');
+const uploadsDir = config.uploadsDir;
 const imagesDir = path.join(uploadsDir, 'images');
 const filesDir = path.join(uploadsDir, 'files');
 const thumbsDir = path.join(uploadsDir, 'thumbs');
 
-[uploadsDir, imagesDir, filesDir, thumbsDir].forEach(dir => {
+[imagesDir, filesDir, thumbsDir].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -46,7 +66,7 @@ app.use(express.static(publicDir));
 
 // ============ DATABASE SETUP ============
 let db;
-const dbPath = path.join(__dirname, 'holotree.db');
+const dbPath = config.dbPath;
 
 async function initDatabase() {
   const SQL = await initSqlJs();
@@ -115,19 +135,119 @@ async function initDatabase() {
     saveDatabase();
   }
   
-  console.log('Database initialized');
+  console.log('✅ Database initialized');
+  console.log(`📂 Database path: ${dbPath}`);
+  console.log(`💾 Backup directory: ${config.backupDir}`);
 }
 
+// ============ BACKUP SYSTEM ============
 function saveDatabase() {
-  const data = db.export();
-  const buffer = Buffer.from(data);
-  fs.writeFileSync(dbPath, buffer);
+  try {
+    const data = db.export();
+    const buffer = Buffer.from(data);
+    fs.writeFileSync(dbPath, buffer);
+    console.log(`💾 Database saved: ${new Date().toISOString()}`);
+    return true;
+  } catch (error) {
+    console.error('❌ Error saving database:', error);
+    return false;
+  }
 }
 
-// Auto-save database every 10 seconds
-setInterval(() => {
+function createBackup() {
+  try {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const backupPath = path.join(config.backupDir, `holotree-${timestamp}.db`);
+    
+    const data = db.export();
+    const buffer = Buffer.from(data);
+    fs.writeFileSync(backupPath, buffer);
+    
+    console.log(`🔄 Backup created: ${backupPath}`);
+    
+    // Ротация старых бэкапов
+    rotateBackups();
+    return backupPath;
+  } catch (error) {
+    console.error('❌ Error creating backup:', error);
+    return null;
+  }
+}
+
+function rotateBackups() {
+  try {
+    const files = fs.readdirSync(config.backupDir)
+      .filter(f => f.startsWith('holotree-') && f.endsWith('.db'))
+      .map(f => ({
+        name: f,
+        path: path.join(config.backupDir, f),
+        time: fs.statSync(path.join(config.backupDir, f)).mtime.getTime()
+      }))
+      .sort((a, b) => b.time - a.time);
+    
+    // Удаляем старые бэкапы, оставляя только N последних
+    if (files.length > config.backupKeepCount) {
+      const toDelete = files.slice(config.backupKeepCount);
+      toDelete.forEach(file => {
+        fs.unlinkSync(file.path);
+        console.log(`🗑️  Deleted old backup: ${file.name}`);
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error rotating backups:', error);
+  }
+}
+
+function restoreFromBackup(backupPath) {
+  try {
+    if (!fs.existsSync(backupPath)) {
+      console.error('❌ Backup file not found:', backupPath);
+      return false;
+    }
+    
+    fs.copyFileSync(backupPath, dbPath);
+    console.log(`♻️  Restored from backup: ${backupPath}`);
+    return true;
+  } catch (error) {
+    console.error('❌ Error restoring backup:', error);
+    return false;
+  }
+}
+
+function listBackups() {
+  try {
+    const files = fs.readdirSync(config.backupDir)
+      .filter(f => f.startsWith('holotree-') && f.endsWith('.db'))
+      .map(f => {
+        const stat = fs.statSync(path.join(config.backupDir, f));
+        return {
+          name: f,
+          path: path.join(config.backupDir, f),
+          size: stat.size,
+          created: stat.mtime
+        };
+      })
+      .sort((a, b) => b.created - a.created);
+    
+    return files;
+  } catch (error) {
+    console.error('❌ Error listing backups:', error);
+    return [];
+  }
+}
+
+// Автосохранение основной БД каждые 10 секунд
+const autoSaveInterval = setInterval(() => {
   if (db) saveDatabase();
-}, 10000);
+}, config.autoSaveInterval);
+
+// Автоматическое создание бэкапов каждые N минут
+const backupInterval = setInterval(() => {
+  if (db) createBackup();
+}, config.backupInterval);
+
+console.log(`⏰ Auto-save: every ${config.autoSaveInterval / 1000}s`);
+console.log(`⏰ Auto-backup: every ${config.backupInterval / 60000} minutes`);
 
 // Helper function to convert sql.js results to objects
 function queryToObjects(result) {
@@ -607,21 +727,113 @@ app.get('*', (req, res) => {
   }
 });
 
+// ============ BACKUP API ENDPOINTS ============
+app.get('/api/backups', (req, res) => {
+  const backups = listBackups();
+  res.json({ backups, config: { keepCount: config.backupKeepCount, interval: config.backupInterval } });
+});
+
+app.post('/api/backup/create', (req, res) => {
+  const backupPath = createBackup();
+  if (backupPath) {
+    res.json({ success: true, path: backupPath });
+  } else {
+    res.status(500).json({ success: false, error: 'Failed to create backup' });
+  }
+});
+
+app.post('/api/backup/restore', (req, res) => {
+  const { backupPath } = req.body;
+  if (restoreFromBackup(backupPath)) {
+    res.json({ success: true, message: 'Database restored. Please restart the server.' });
+  } else {
+    res.status(500).json({ success: false, error: 'Failed to restore backup' });
+  }
+});
+
 // ============ START SERVER ============
-const PORT = process.env.PORT || 3001;
+const PORT = config.port;
 
 initDatabase().then(() => {
   server.listen(PORT, () => {
-    console.log(`HoloTree server running on port ${PORT}`);
+    console.log('\n🌳 ═══════════════════════════════════════════════════');
+    console.log('   HoloTree Knowledge Base Server');
+    console.log('   ═══════════════════════════════════════════════════');
+    console.log(`   🚀 Server running on port ${PORT}`);
+    console.log(`   📂 Database: ${dbPath}`);
+    console.log(`   💾 Backups: ${config.backupDir}`);
+    console.log(`   ⏰ Auto-save: every ${config.autoSaveInterval / 1000}s`);
+    console.log(`   🔄 Auto-backup: every ${config.backupInterval / 60000}min`);
+    console.log('   ═══════════════════════════════════════════════════\n');
+    
+    // Создаём первый бэкап при запуске
+    createBackup();
   });
 }).catch(err => {
-  console.error('Failed to initialize database:', err);
+  console.error('❌ Failed to initialize database:', err);
   process.exit(1);
 });
 
-// Graceful shutdown
-process.on('SIGINT', () => {
-  console.log('Saving database before exit...');
-  if (db) saveDatabase();
+// ============ GRACEFUL SHUTDOWN ============
+let isShuttingDown = false;
+
+async function gracefulShutdown(signal) {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  
+  console.log(`\n⚠️  Received ${signal}, starting graceful shutdown...`);
+  
+  // Останавливаем интервалы
+  clearInterval(autoSaveInterval);
+  clearInterval(backupInterval);
+  
+  // Закрываем сервер для новых соединений
+  server.close(() => {
+    console.log('🔌 HTTP server closed');
+  });
+  
+  // Уведомляем всех подключенных клиентов
+  io.emit('server:shutdown', { message: 'Server is shutting down' });
+  
+  // Даём время клиентам отключиться
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  // Закрываем Socket.IO
+  io.close(() => {
+    console.log('🔌 Socket.IO closed');
+  });
+  
+  try {
+    // Финальное сохранение БД
+    console.log('💾 Saving database...');
+    if (db) {
+      saveDatabase();
+      console.log('✅ Database saved');
+      
+      // Создаём финальный бэкап
+      console.log('🔄 Creating final backup...');
+      createBackup();
+      console.log('✅ Final backup created');
+    }
+  } catch (error) {
+    console.error('❌ Error during shutdown:', error);
+  }
+  
+  console.log('👋 Shutdown complete. Goodbye!\n');
   process.exit(0);
+}
+
+// Обработка различных сигналов завершения
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Обработка необработанных ошибок
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  gracefulShutdown('uncaughtException');
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  gracefulShutdown('unhandledRejection');
 });
